@@ -1,0 +1,50 @@
+// schema.prisma
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  email         String         @unique
+  number        String
+  password      String
+  coins         Decimal        @default(0)
+  referral      String         @unique @default("")
+  purchaseList  PurchaseItem[]
+  notifications Notification[]
+}
+
+model PurchaseItem {
+  id           Int     @id @default(autoincrement())
+  course       Course  @relation(fields: [courseId], references: [id])
+  courseId     Int
+  price        Decimal
+  usedReferral String  @default("")
+  user         User    @relation(fields: [userId], references: [id])
+  userId       Int
+}
+
+model Course {
+  id                Int            @id @default(autoincrement())
+  title             String
+  description       String
+  price             Decimal
+  refrerralDiscount Decimal
+  purchaseList      PurchaseItem[]
+}
+
+model Notification {
+  id      Int     @id @default(autoincrement())
+  seen    Boolean @default(false)
+  opened  Boolean @default(false)
+  message String
+  user    User    @relation(fields: [userId], references: [id])
+  userId  Int
+}
