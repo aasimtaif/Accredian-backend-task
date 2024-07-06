@@ -12,32 +12,54 @@ export const createPurchase = async (req, res, next) => {
         if (!courseExists) {
             return next(createError(404, "Course not found!"));
         }
-        const purchase = await prisma.$transaction([
-            prisma.purchaseItem.create({
-                data: {
-                    ...otherDetails,
-                    user: {
-                        connect: {
-                            id: userId
-                        }
-                    },
-                    course: {
-                        connect: {
-                            id: courseId
-                        }
+
+        const purchase = await prisma.purchaseItem.create({
+            data: {
+                ...otherDetails,
+                user: {
+                    connect: {
+                        id: userId
+                    }
+                },
+                course: {
+                    connect: {
+                        id: courseId
                     }
                 }
-            }),
-            prisma.user.update({
-                where: {
-                    id: referralUser
-                },
-                data: {
-                    coin: referralUser
-                }
-            })
-        ]);
-        res.status(200).json(purchase);
+            }
+        })
+        if (referralUser) {
+
+            if (referralUser === userId) {
+                return next(createError(400, "Users cannot refer themselves! "));
+            }
+            const updateCoinsANdNOtification = await prisma.$transaction([
+                prisma.user.update({
+                    where: {
+                        id: referralUser
+                    },
+                    data: {
+                        coins: {
+                            increment: (courseExists.price * courseExists.refrerralDiscount) / 100
+                        }
+                    }
+                }),
+                prisma.notification.create({
+                    data: {
+                        user: {
+                            connect: {
+                                id: referralUser
+                            }
+                        },
+                        message: `You have received ${courseExists.price * courseExists.refrerralDiscount / 100} coins for referring a user to purchase a course`
+                    }
+                })
+            ]);
+            res.status(200).json({ purchase, updateCoinsANdNOtification, message: "Purchase successful! and the referal coins are added to the user" });
+        }
+        else{
+            res.status(200).json({ purchase, message: "Purchase successful!" });
+        }
     } catch (err) {
         console.log(err);
         return next(err);

@@ -13,7 +13,7 @@ model User {
   id            Int            @id @default(autoincrement())
   name          String         @unique
   email         String         @unique
-  number        String
+  number        String         @unique
   password      String
   coins         Decimal        @default(0)
   referral      String         @unique @default("")
@@ -22,13 +22,14 @@ model User {
 }
 
 model PurchaseItem {
-  id           Int     @id @default(autoincrement())
-  course       Course  @relation(fields: [courseId], references: [id])
+  id           Int      @id @default(autoincrement())
+  course       Course   @relation(fields: [courseId], references: [id])
   courseId     Int
   price        Decimal
-  usedReferral String  @default("")
-  user         User    @relation(fields: [userId], references: [id])
+  usedReferral String   @default("")
+  user         User     @relation(fields: [userId], references: [id])
   userId       Int
+  Timestamp    DateTime @default(now())
 }
 
 model Course {
@@ -41,10 +42,11 @@ model Course {
 }
 
 model Notification {
-  id      Int     @id @default(autoincrement())
-  seen    Boolean @default(false)
-  opened  Boolean @default(false)
-  message String
-  user    User    @relation(fields: [userId], references: [id])
-  userId  Int
+  id        Int      @id @default(autoincrement())
+  seen      Boolean  @default(false)
+  opened    Boolean  @default(false)
+  message   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  TimeStamp DateTime @default(now())
 }

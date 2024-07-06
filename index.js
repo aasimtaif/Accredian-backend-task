@@ -7,6 +7,7 @@ import userRouter from './routes/user.js';
 import courceRouter from './routes/course.js';
 import ReferralVerificationRouter from './routes/ReferralVerification.js';
 import purchaseRouter from './routes/purchase.js';
+import NotificationRouter from './routes/notification.js';
 const app = express();
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/api/users", userRouter);
 app.use("/api/courses", courceRouter);
 app.use("/api/purchases", purchaseRouter);
 app.use("/api/referral", ReferralVerificationRouter);
+app.use("/api/notifications", NotificationRouter);
 
 app.use((err, req, res, next) => {
     const errorStatus = err.status || 500;
