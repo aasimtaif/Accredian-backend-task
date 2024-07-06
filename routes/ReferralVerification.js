@@ -1,8 +1,8 @@
 import express from 'express'
-import { checkReferral } from '../controllers/ReferralVerification.js'
+import { checkReferral, createReferral } from '../controllers/Referral.js'
 
 const router = express.Router()
 
-router.post('/', checkReferral)
-
+router.put('/', checkReferral)
+router.get("/:userId", createReferral);
 export default router

@@ -2,7 +2,7 @@ import { createError } from "../utils/error.js";
 import { prisma } from "../config/prisma.config.js";
 
 export const createPurchase = async (req, res, next) => {
-    const { userId, courseId, referralUser, ...otherDetails } = req.body;
+    const { userId, courseId, usedReferral, coinsUsed, price } = req.body;
     try {
         const courseExists = await prisma.course.findUnique({
             where: {
@@ -13,30 +13,42 @@ export const createPurchase = async (req, res, next) => {
             return next(createError(404, "Course not found!"));
         }
 
-        const purchase = await prisma.purchaseItem.create({
-            data: {
-                ...otherDetails,
-                user: {
-                    connect: {
-                        id: userId
-                    }
-                },
-                course: {
-                    connect: {
-                        id: courseId
+        const purchase = await prisma.$transaction([
+            prisma.purchaseItem.create({
+                data: {
+                    usedReferral: usedReferral.toString(),
+                    price: parseInt(coinsUsed) - parseInt(price),
+                    user: {
+                        connect: {
+                            id: userId
+                        }
+                    },
+                    course: {
+                        connect: {
+                            id: courseId
+                        }
                     }
                 }
-            }
-        })
-        if (referralUser) {
-
-            if (referralUser === userId) {
+            }),
+            prisma.user.update({
+                where: {
+                    id: userId
+                },
+                data: {
+                    coins: {
+                        decrement: coinsUsed
+                    }
+                }
+            })
+        ]);
+        if (usedReferral) {
+            if (usedReferral === userId) {
                 return next(createError(400, "Users cannot refer themselves! "));
             }
             const updateCoinsANdNOtification = await prisma.$transaction([
                 prisma.user.update({
                     where: {
-                        id: referralUser
+                        id: usedReferral
                     },
                     data: {
                         coins: {
@@ -48,7 +60,7 @@ export const createPurchase = async (req, res, next) => {
                     data: {
                         user: {
                             connect: {
-                                id: referralUser
+                                id: usedReferral
                             }
                         },
                         message: `You have received ${courseExists.price * courseExists.refrerralDiscount / 100} coins for referring a user to purchase a course`
@@ -57,7 +69,7 @@ export const createPurchase = async (req, res, next) => {
             ]);
             res.status(200).json({ purchase, updateCoinsANdNOtification, message: "Purchase successful! and the referal coins are added to the user" });
         }
-        else{
+        else {
             res.status(200).json({ purchase, message: "Purchase successful!" });
         }
     } catch (err) {

@@ -13,17 +13,34 @@ export const getUsers = async (req, res, next) => {
     }
 }
 
-export const getUser = async (req, res) => {
+export const getUser = async (req, res, next) => {
     try {
         const user = await prisma.user.findUnique({
             where: {
-                id: req.params.id
+                id: parseInt(req.params.id)
+            },
+            include: {
+                purchaseList: {
+                    include: {
+                        course: true
+                    }
+                }
             }
         });
-        user.forEach(user => {
-            delete user.password;
-        });
-        res.status(200).json(user);
+        delete user.password;
+        const userInfo = {
+            ...user,
+            purchaseList: user.purchaseList.map(purchase => {
+                return {
+                    purchaseId: purchase.id,
+                    paid: purchase.price,
+                    ReferralUsed: purchase.usedReferral,
+                    courseTitle: purchase.course.title,
+                    courseId: purchase.course.id
+                }
+            })
+        }
+        res.status(200).json(userInfo);
     } catch (err) {
         console.log(err);
         return next(err);
@@ -31,33 +48,4 @@ export const getUser = async (req, res) => {
     }
 }
 
-export const createReferral = async (req, res,next) => {
-    const id  = parseInt(req.params.id);
-    try {
-        const user = await prisma.user.findUnique({
-            where: {
-                id
-            }
-        });
-        if (!user) {
-            return next(createError(404, "User not found!"));
-        }
-        if (user.referral) {
-            return next(createError(400, "Referral code already exists!"));
-        }
-        const referral = `${user.name}/${user.id}/course-referral`;
-        const updatedUser = await prisma.user.update({
-            where: {
-                id
-            },
-            data: {
-                referral
-            }
-        })
-        res.status(200).json(updatedUser);
 
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: "Internal server error." });
-    }
-}
